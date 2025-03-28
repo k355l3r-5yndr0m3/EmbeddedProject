@@ -1,0 +1,12 @@
+Hover:
+  ShowAKA: Yes
+# diagnostics:
+#   unusedincludes: strict
+---
+If:
+  PathMatch: .*\.c
+CompileFlags:
+  Add: [-xc, -std=c99, -IRTE/Device/STM32F103C8, -I/home/cha0s/.wine/drive_c/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/Device/Include]
+  Compiler: clang
+
+

@@ -1,0 +1,119 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.42.0.0
+Copyright (C) 2025 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: ewrggfgrerfgtht fgh, rfgthrtgre, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.42.0.0
+Toolchain Path:  C:\users\cha0s\AppData\Local\Keil_v5\ARM\ARMCLANG\Bin
+C Compiler:      ArmClang.exe V6.23
+Assembler:       Armasm.exe V6.23
+Linker/Locator:  ArmLink.exe V6.23
+Library Manager: ArmAr.exe V6.23
+Hex Converter:   FromElf.exe V6.23
+CPU DLL:         SARMCM3.DLL V5.42.0.0
+Dialog DLL:      DCM.DLL V1.17.5.0
+Target DLL:      UL2CM3.DLL V1.164.14.0
+Dialog DLL:      TCM.DLL V1.56.6.0
+ 
+<h2>Project:</h2>
+C:\users\cha0s\Documents\CountWalkCode\CountWalkCode.uvprojx
+Project File Date:  03/28/2025
+
+<h2>Output:</h2>
+*** Using Compiler 'V6.23', folder: 'C:\users\cha0s\AppData\Local\Keil_v5\ARM\ARMCLANG\Bin'
+Build target 'Target_1'
+creating preprocessor file for main.c...
+compiling main.c...
+creating preprocessor file for I2C_STM32F10x.c...
+creating preprocessor file for DMA_STM32F10x.c...
+compiling I2C_STM32F10x.c...
+creating preprocessor file for GPIO_STM32F10x.c...
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(301): warning: unused parameter 'event' [-Wunused-parameter]
+  301 | __WEAK void DMA1_Channel1_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(302): warning: unused parameter 'event' [-Wunused-parameter]
+  302 | __WEAK void DMA1_Channel2_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(303): warning: unused parameter 'event' [-Wunused-parameter]
+  303 | __WEAK void DMA1_Channel3_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(304): warning: unused parameter 'event' [-Wunused-parameter]
+  304 | __WEAK void DMA1_Channel4_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(305): warning: unused parameter 'event' [-Wunused-parameter]
+  305 | __WEAK void DMA1_Channel5_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(306): warning: unused parameter 'event' [-Wunused-parameter]
+  306 | __WEAK void DMA1_Channel6_Event (uint32_t event) {;}
+      |                                           ^
+C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver/DMA_STM32F10x.c(307): warning: unused parameter 'event' [-Wunused-parameter]
+  307 | __WEAK void DMA1_Channel7_Event (uint32_t event) {;}
+      |                                           ^
+7 warnings generated.
+compiling DMA_STM32F10x.c...
+creating preprocessor file for system_stm32f10x.c...
+compiling GPIO_STM32F10x.c...
+compiling system_stm32f10x.c...
+linking...
+Program Size: Code=8348 RO-data=372 RW-data=4 ZI-data=1668  
+FromELF: creating hex file...
+".\Objects\CountWalkCode.axf" - 0 Error(s), 7 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                https://www.keil.com/pack/ARM.CMSIS.6.1.0.pack
+                ARM::CMSIS@6.1.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 6.1.0
+   * Component: I2C Version: 2.4.0
+
+Package Vendor: Keil
+                https://www.keil.com/pack/Keil.STM32F1xx_DFP.2.4.1.pack
+                Keil::STM32F1xx_DFP@2.4.1
+                STMicroelectronics STM32F1 Series Device Support, Drivers and Examples
+   * Component: I2C Version: 2.2
+   * Component: DMA Version: 1.3
+   * Component: GPIO Version: 1.3
+   * Component: Startup Version: 1.0.0
+
+<h2>Collection of Component include folders:</h2>
+  ./RTE/Device/STM32F103C8
+  ./RTE/_Target_1
+  C:/users/cha0s/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include
+  C:/users/cha0s/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Driver/Include
+  C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/Device/Include
+  C:/users/cha0s/AppData/Local/Arm/Packs/Keil/STM32F1xx_DFP/2.4.1/RTE_Driver
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE@6.1.0
+
+   * Component: CMSIS Driver:I2C(API)@2.4.0
+      Include file:  CMSIS/Driver/Include/Driver_I2C.h
+
+   * Component: Keil::CMSIS Driver:I2C@2.2
+      Source file:   RTE_Driver/I2C_STM32F10x.c
+
+   * Component: Keil::Device:DMA@1.3
+      Include file:  RTE_Driver/DMA_STM32F10x.h
+      Source file:   RTE_Driver/DMA_STM32F10x.c
+
+   * Component: Keil::Device:GPIO@1.3
+      Include file:  RTE_Driver/GPIO_STM32F10x.h
+      Source file:   RTE_Driver/GPIO_STM32F10x.c
+
+   * Component: Keil::Device:Startup@1.0.0
+      Source file:   Device/Source/ARM/startup_stm32f10x_md.s
+      Source file:   Device/Source/system_stm32f10x.c
+      Include file:  RTE_Driver/Config/RTE_Device.h
+      Source file:   Device/Source/ARM/STM32F1xx_OPT.s
+Build Time Elapsed:  00:00:01
+</pre>
+</body>
+</html>
