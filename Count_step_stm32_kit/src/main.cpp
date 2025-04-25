@@ -3,111 +3,183 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <LiquidCrystal_I2C.h>
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+#include <semphr.h>
 
-// Define pins for LEDs and buttons
+// Hardware definitions
 #define LED_GREEN PA4
 #define LED_RED PA5
 #define SW1 PA6
 #define SW2 PA7
 
-// Create objects for MPU6050 and LCD
-Adafruit_MPU6050 mpu;
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Address 0x27, 16 columns, 2 rows
-
-// Variables
-volatile bool isCounting = false;
-volatile bool resetSteps = false;
+// FreeRTOS objects
+SemaphoreHandle_t xMutex;
+// Thay đổi kiểu queue để truyền giá trị số nguyên
+QueueHandle_t xButtonQueue = xQueueCreate(5, sizeof(int)); // Queue chứa giá trị int
+// Global variables
 volatile int stepCount = 0;
-unsigned long lastStepTime = 0;
-unsigned long lastBlinkTime = 0;
-const unsigned long blinkInterval = 1000; // 1 Hz blinking
+bool isCounting = false;
+bool resetRequest = false;
+Adafruit_MPU6050 mpu;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-float prevAx = 0.0, prevAy = 0.0, prevAz = 0.0; // Previous accelerations for x, y, z
+// Task prototypes
+void vSensorTask(void *pvParameters);
+void vLCDTask(void *pvParameters);
+void vLEDTask(void *pvParameters);
+void vButtonTask(void *pvParameters);
 
-void toggleCounting() {
-    isCounting = !isCounting;
+// ISR handlers
+void toggleISR() {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    int buttonID = SW1; // Tạo biến cục bộ lưu giá trị SW1
+    xQueueSendFromISR(xButtonQueue, &buttonID, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void resetCounter() {
-    resetSteps = true;
+void resetISR() {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    int buttonID = SW2; // Tạo biến cục bộ lưu giá trị SW2
+    xQueueSendFromISR(xButtonQueue, &buttonID, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 void setup() {
-    // Initialize serial communication
     Serial.begin(9600);
-
-    // Initialize LEDs
+    
+    // Hardware initialization
     pinMode(LED_GREEN, OUTPUT);
     pinMode(LED_RED, OUTPUT);
-
-    // Initialize buttons with interrupts
+    
     pinMode(SW1, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(SW1), toggleCounting, FALLING);
-
+    attachInterrupt(digitalPinToInterrupt(SW1), toggleISR, FALLING);
+    
     pinMode(SW2, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(SW2), resetCounter, FALLING);
+    attachInterrupt(digitalPinToInterrupt(SW2), resetISR, FALLING);
 
-    // Initialize LCD
     lcd.init();
     lcd.backlight();
-    lcd.print("Steps: 0");
+    lcd.print("Initializing...");
 
-    // Initialize MPU6050
     if (!mpu.begin()) {
         lcd.clear();
-        lcd.print("MPU6050 ERROR");
-        while (1);
+        lcd.print("MPU6050 Error!");
+        while(1);
     }
     mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
     mpu.setGyroRange(MPU6050_RANGE_250_DEG);
     mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
+
+    // Create RTOS objects
+    xMutex = xSemaphoreCreateMutex();
+    xButtonQueue = xQueueCreate(5, sizeof(int));
+
+    // Create tasks
+    xTaskCreate(vSensorTask, "Sensor", 256, NULL, 3, NULL);
+    xTaskCreate(vLCDTask, "LCD", 128, NULL, 2, NULL);
+    xTaskCreate(vLEDTask, "LED", 128, NULL, 1, NULL);
+    xTaskCreate(vButtonTask, "Button", 128, NULL, 4, NULL);
+
+    vTaskStartScheduler();
 }
 
-void loop() {
-    // Check if reset is requested
-    if (resetSteps) {
-        stepCount = 0;
-        lcd.clear();
-        lcd.print("Steps: 0");
-        resetSteps = false;
-    }
+void loop() {} // Empty loop
 
-    if (isCounting) {
-        digitalWrite(LED_RED, LOW);
-        unsigned long currentTime = millis();
-        if (currentTime - lastBlinkTime >= blinkInterval) {
-            digitalWrite(LED_GREEN, !digitalRead(LED_GREEN));
-            lastBlinkTime = currentTime;
+// Task implementations
+void vSensorTask(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    float prevAx = 0, prevAy = 0, prevAz = 0;
+    TickType_t lastStepTick = 0; // Thêm biến lưu thời gian tick cuối cùng
+    
+    while(1) {
+        if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+            bool counting = isCounting;
+            xSemaphoreGive(xMutex);
+
+            if (counting) {
+                sensors_event_t a, g, temp;
+                mpu.getEvent(&a, &g, &temp);
+
+                // Tính toán delta acceleration
+                float delta = sqrt(pow(a.acceleration.x - prevAx, 2) +
+                              pow(a.acceleration.y - prevAy, 2) +
+                              pow(a.acceleration.z - prevAz, 2));
+
+                // Cập nhật giá trị trước
+                prevAx = a.acceleration.x;
+                prevAy = a.acceleration.y;
+                prevAz = a.acceleration.z;
+
+                // Thêm điều kiện thời gian giữa các bước
+                if (delta > 0.5 && delta < 2.5 && 
+                    (xTaskGetTickCount() - lastStepTick) > pdMS_TO_TICKS(300)) {
+                    
+                    stepCount++;
+                    lastStepTick = xTaskGetTickCount(); // Cập nhật thời điểm bước cuối
+                }
+            }
         }
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
+    }
+}
 
-        sensors_event_t a, g, temp;
-        mpu.getEvent(&a, &g, &temp);
-
-        // Calculate change in acceleration for each axis
-        float deltaAx = a.acceleration.x - prevAx;
-        float deltaAy = a.acceleration.y - prevAy;
-        float deltaAz = a.acceleration.z - prevAz;
-
-        // Update previous accelerations
-        prevAx = a.acceleration.x;
-        prevAy = a.acceleration.y;
-        prevAz = a.acceleration.z;
-
-        // Calculate magnitude of change in acceleration
-        float deltaAcceleration = sqrt(pow(deltaAx, 2) + pow(deltaAy, 2) + pow(deltaAz, 2));
-
-        // Simple step detection logic based on change in acceleration
-        if (deltaAcceleration > 0.5 && deltaAcceleration < 2.5) { // Adjust thresholds as needed
-            if (currentTime - lastStepTime > 300) { // Debounce step detection
-                stepCount++;
-                lastStepTime = currentTime;
+void vLCDTask(void *pvParameters) {
+    int lastCount = -1;
+    
+    while(1) {
+        if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+            if (resetRequest) {
+                stepCount = 0;
+                resetRequest = false;
+                lastCount = -1;
+            }
+            
+            if (lastCount != stepCount) {
                 lcd.clear();
                 lcd.print("Steps: ");
                 lcd.print(stepCount);
+                lastCount = stepCount;
+            }
+            xSemaphoreGive(xMutex);
+        }
+        vTaskDelay(pdMS_TO_TICKS(200));
+    }
+}
+
+void vLEDTask(void *pvParameters) {
+    bool ledState = false;
+    
+    while(1) {
+        if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+            if (isCounting) {
+                digitalWrite(LED_GREEN, ledState);
+                digitalWrite(LED_RED, LOW);
+                ledState = !ledState;
+            } else {
+                digitalWrite(LED_GREEN, LOW);
+                digitalWrite(LED_RED, HIGH);
+            }
+            xSemaphoreGive(xMutex);
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+void vButtonTask(void *pvParameters) {
+    int receivedButtonID;
+    
+    while(1) {
+        if (xQueueReceive(xButtonQueue, &receivedButtonID, portMAX_DELAY) == pdTRUE) {
+            if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+                if (receivedButtonID == SW1) {
+                    isCounting = !isCounting;
+                } else if (receivedButtonID == SW2) {
+                    resetRequest = true;
+                }
+                xSemaphoreGive(xMutex);
             }
         }
-    } else {
-        digitalWrite(LED_GREEN, LOW);
-        digitalWrite(LED_RED, HIGH);
     }
 }
